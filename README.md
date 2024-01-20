@@ -1,11 +1,11 @@
-#V 0.1 alpha preview
+**V 0.1 alpha preview**
 
 The helper class VariantViewer that help to wrap std::visit to more user friendly usage with std::variant and std::optional<std::variant>
 for example function execution may produce nullopt in some cases, or variant with some values, we want to access values by list our handlers to them by
 specify types that we want to processing or do what we want with variant like adding extracting substracting it's types on fly, and do our handle processing tree without bothering about override visitor class for specific types
 to help access of options via pipe | operator and << shift to no options or >> shift to all options callbacks.
 
-##Example of usage:
+**Example of usage:**
 
 1. I wish to process result from function that can be certain type or no result for example I returning std::optional< std::variant< ... > > or better I have variant< std::monostate, ... TYPES ... >
 2. I do processing through listing desired lambda's
