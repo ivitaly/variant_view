@@ -109,26 +109,26 @@ namespace custom_view {
         variant_t variant_holder;
         mutable std::unordered_set<std::size_t> processedTypes{};
 
-		    template <typename Callable>
+	template <typename Callable>
         AfterPipeChainHandlerProxy<Ts...> operator|(Callable&& c) {
-            proxy_request_pipe(std::forward<Callable>(c));
-			      return *this;
-		    }
+            	proxy_request_pipe(std::forward<Callable>(c));
+		return *this;
+	}
 
         template <typename Callable>
-		    constexpr auto& proxy_request_pipe(Callable&& c) const {
+	constexpr auto& proxy_request_pipe(Callable&& c) const {
 
-    			std::visit([&](auto&& val) {
-    				using T = decltype(val);
-                if constexpr (std::is_invocable_v<Callable&, T>)
-                    std::invoke(std::forward<Callable>(c), val);
+    		std::visit([&](auto&& val) {
+    			using T = decltype(val);
+                	if constexpr (std::is_invocable_v<Callable&, T>)
+                    		std::invoke(std::forward<Callable>(c), val);
               //  else
                  //   if constexpr (!IsContainedIn<T, std::variant<Ts...>>::value)
     			//		static_assert(always_false<T>::value, "type not listed in variant");
-    				}, variant_holder);
+    		}, variant_holder);
 
-			      return variant_holder;
-		    }
+	 	return variant_holder;
+	}
 
         // handler for nullopt variant case or regular variant but that monostate contained
          // template <typename Callable>
@@ -151,16 +151,17 @@ namespace custom_view {
         }
 
 	template <typename T>
-	std::optional<T> extract_value_if() {
-		if (auto* value = std::get_if<T>(&variant_holder)) {
-			return *value;
-		} return std::nullopt;
+	bool extract_value_to( std::optional<T> &to ) const {
+		if (const T* value = std::get_if<T>(&variant_holder)) {
+                	to.emplace(*value);
+                	return true;
+            	} to = std::nullopt;
+            return false;
 	}
 
         template <typename T>
-        friend bool operator ^= ( std::optional<T> to, const VariantViewer<Ts...> &this_inst ) {
-            to = this_inst.template extract_value_if<T>();
-            return to.has_value();
+        friend bool operator ^= ( std::optional<T> &to, const VariantViewer<Ts...> &this_inst ) {
+            return this_inst.extract_value_to(to);
         }
 
         template <typename T>
