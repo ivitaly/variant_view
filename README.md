@@ -32,3 +32,14 @@ for single processing no or all options you may skip one of operators upper.
 
 // TODO: support for multitypes multivariants static assertion etc
 
+Also there optional extraction of variant, here how I use if extraction not resulting to true (which mean's type is extracted) and then do test does current type is bool held by variant
+
+```cpp
+auto dir = vec2f_zero;
+        std::optional<vec2f> move_dir = std::nullopt; // then I may distinct where dir comes from mean what is dir classification like
+        if (move_dir ^= custom_view::variants(options))
+            dir = *move_dir;
+        else if ( custom_view::variants(options).contains<bool>() )
+            dir = Trackable.get()->Origin.get() - pCamera->Origin.get();
+```
+
