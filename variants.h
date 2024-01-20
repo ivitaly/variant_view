@@ -150,6 +150,24 @@ namespace custom_view {
             } return false;
         }
 
+	template <typename T>
+	std::optional<T> extract_value_if() {
+		if (auto* value = std::get_if<T>(&variant_holder)) {
+			return *value;
+		} return std::nullopt;
+	}
+
+        template <typename T>
+        friend bool operator ^= ( std::optional<T> to, const VariantViewer<Ts...> &this_inst ) {
+            to = this_inst.template extract_value_if<T>();
+            return to.has_value();
+        }
+
+        template <typename T>
+        constexpr bool contains() {
+            return std::get_if<T>(&variant_holder) != nullptr;
+	}
+
         // nothing to view (nullopt or monostate)
         constexpr bool empty() const {
             return variant_holder.index() == 0;
