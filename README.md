@@ -43,3 +43,31 @@ auto dir = vec2f_zero;
             dir = Trackable.get()->Origin.get() - pCamera->Origin.get();
 ```
 
+Or we can extract dir optionally when some bool in variant true do it differently and set some flag or set to vec2f_zero on assigning
+
+```cpp
+
+std::optional< std::variant<...> > options = ... ;
+
+const auto variants{ custom_view::variants(options) };
+
+  if (!variants.empty()) {
+      bool bFollowing(false);
+      auto dir = variants.try_extract<vec2f>
+      ().value_or( 
+        [&]() {
+          if (variants.try_extract<bool>().value_or(false)) {
+            bFollowing = true;
+            return Trackable.get()->Origin.get() - pCamera->Origin.get();
+          } return vec2f_zero;
+        } ()  
+      );
+
+      if (bFollowing) {
+          // additional dir processing
+      }
+
+      // other dir processing
+  }
+ 
+```
