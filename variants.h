@@ -7,13 +7,13 @@
 #include <functional>
 
 namespace custom_view {
-  template <class... T> struct always_false : std::false_type {};
+   template <class... T> struct always_false : std::false_type {};
 
-  // To have true, but for a type that user code can't reuse as lambda types are unique.
-  template <> struct always_false<decltype([]() {}) > : std::true_type {};
+   // To have true, but for a type that user code can't reuse as lambda types are unique.
+   template <> struct always_false<decltype([]() {}) > : std::true_type {};
    
-	template <typename T, typename... Ts>
-	struct RemoveType;
+   template <typename T, typename... Ts>
+   struct RemoveType;
 
 	// Base case: Empty type list
 	template <typename T>
@@ -96,11 +96,11 @@ namespace custom_view {
 
   constexpr std::variant<std::monostate> empty_variant_thunk;
 
-	template <typename... Ts>
-    class AfterEmptyHandlerProxy;
+   template <typename... Ts>
+   class AfterEmptyHandlerProxy;
 
-	template <typename... Ts>
-    class AfterPipeChainHandlerProxy;
+   template <typename... Ts>
+   class AfterPipeChainHandlerProxy;
 
   template <typename... Ts>
   struct VariantViewer {
@@ -131,13 +131,13 @@ namespace custom_view {
 	}
 
         // handler for nullopt variant case or regular variant but that monostate contained
-         // template <typename Callable>
+        // template <typename Callable>
         //auto operator << (const on_empty& when_empty) const;
 
         template <typename Callable>
         AfterEmptyHandlerProxy<Ts...> operator << (Callable&& on_empty_callback) const {
             if (empty())
-				      on_empty_callback();
+		on_empty_callback();
             return *this;
         }
 
@@ -152,11 +152,27 @@ namespace custom_view {
 
 	template <typename T>
 	bool extract_value_to( std::optional<T> &to ) const {
-		if (const T* value = std::get_if<T>(&variant_holder)) {
-                	to.emplace(*value);
-                	return true;
-            	} to = std::nullopt;
+	    if (const T* value = std::get_if<T>(&variant_holder)) {
+                to.emplace(*value);
+                return true;
+            } to = std::nullopt;
             return false;
+	}
+
+        template <typename T>
+        auto try_extract() const {
+            std::optional<T> ret{ std::nullopt };
+            extract_value_to(ret);
+            return ret;
+	}
+
+	template <typename T>
+	bool try_extract(T& to_where) const {
+            std::optional<T> ret{std::nullopt};
+            if (extract_value_to(ret)) {
+                to_where = *ret;
+                return true;
+            } return false;
 	}
 
         template <typename T>
@@ -171,12 +187,12 @@ namespace custom_view {
 
         // nothing to view (nullopt or monostate)
         constexpr bool empty() const {
-            return variant_holder.index() == 0;
+            return std::get_if<std::monostate>(&variant_holder) != nullptr;//return variant_holder.index() == 0;
         }
     };
 
-    template <typename... Ts>
-    struct ContainsMonostate : std::disjunction<std::is_same<Ts, std::monostate>...> {};
+    	template <typename... Ts>
+    	struct ContainsMonostate : std::disjunction<std::is_same<Ts, std::monostate>...> {};
 
 	template <typename Variant>
 	consteval bool mono_state_is_first() {
@@ -192,65 +208,64 @@ namespace custom_view {
 		return is_contained_in_v<std::monostate, Ts...>;
 	}
 
-    template <typename... Ts>
-    inline VariantViewer<Ts...> CreateViewer(const std::variant<Ts... >& variant) {
+    	template <typename... Ts>
+    	inline VariantViewer<Ts...> CreateViewer(const std::variant<Ts... >& variant) {
         static_assert (ContainsMonostate<Ts...>::value, "should contains monostate");
         if constexpr( mono_state_is_first<std::variant<Ts...>>())
-			return { variant };
-    }
+		return { variant };
+    	}
 
 	template <typename... Ts>
-    class AfterPipeChainHandlerProxy {
-        VariantViewer<Ts...> variant_viewer_proxy_ref;
-    public:
-        AfterPipeChainHandlerProxy(const VariantViewer<Ts...>& v) : variant_viewer_proxy_ref(v) {};
-
-		    template <typename Callable>
-        AfterPipeChainHandlerProxy<Ts...> operator | (Callable&& callback) const {
-            return { variant_viewer_proxy_ref.proxy_request_pipe(std::forward<Callable>(callback)) };
-		    }
-  };
+	class AfterPipeChainHandlerProxy {
+		VariantViewer<Ts...> variant_viewer_proxy_ref;
+	public:
+		AfterPipeChainHandlerProxy(const VariantViewer<Ts...>& v) : variant_viewer_proxy_ref(v) {};
+	
+		template <typename Callable>
+		AfterPipeChainHandlerProxy<Ts...> operator | (Callable&& callback) const {
+		    return { variant_viewer_proxy_ref.proxy_request_pipe(std::forward<Callable>(callback)) };
+		}
+	};
 
     
 	template <typename... Ts>
 	class AfterEmptyHandlerProxy {
-		    VariantViewer<Ts...> variant_viewer_proxy_ref;
+		VariantViewer<Ts...> variant_viewer_proxy_ref;
 	  public:
-		    AfterEmptyHandlerProxy(const VariantViewer<Ts...>& v) : variant_viewer_proxy_ref(v) {};
-       
-		    template <typename Callable>
-        constexpr bool operator >> (Callable&& callback) const {
-            return variant_viewer_proxy_ref.operator>>(std::forward<Callable>(callback));
-        }
-
-        template <typename Callable>
-        AfterPipeChainHandlerProxy<Ts...> operator | (Callable && callback) const {
-            return AfterPipeChainHandlerProxy<Ts...>( variant_viewer_proxy_ref.proxy_request_pipe(std::forward<Callable>(callback)) );
-        }
+		AfterEmptyHandlerProxy(const VariantViewer<Ts...>& v) : variant_viewer_proxy_ref(v) {};
+	
+		template <typename Callable>
+		constexpr bool operator >> (Callable&& callback) const {
+		    return variant_viewer_proxy_ref.operator>>(std::forward<Callable>(callback));
+		}
+	
+		template <typename Callable>
+		AfterPipeChainHandlerProxy<Ts...> operator | (Callable && callback) const {
+		    return AfterPipeChainHandlerProxy<Ts...>( variant_viewer_proxy_ref.proxy_request_pipe(std::forward<Callable>(callback)) );
+		}
 	};
 
-    // TODO: add 'requires' to valid variant types check and static assert for on_type<T> where T is not part of Ts...
+    	// TODO: add 'requires' to valid variant types check and static assert for on_type<T> where T is not part of Ts...
 
-    template <typename... Ts>
-    constexpr auto variants(const std::variant<Ts... >& variant) {
-        if constexpr (mono_state_in_list<Ts...>())
-            return CreateViewer(variant);
-        else
-            return CreateViewer(std::variant<std::monostate, Ts...>{
-            std::visit([](auto&& value) { return std::variant<std::monostate, Ts...>{ value };  }, variant) });
-    }
+	template <typename... Ts>
+	constexpr auto variants(const std::variant<Ts... >& variant) {
+	if constexpr (mono_state_in_list<Ts...>())
+	    return CreateViewer(variant);
+	else
+	    return CreateViewer(std::variant<std::monostate, Ts...>{
+	    std::visit([](auto&& value) { return std::variant<std::monostate, Ts...>{ value };  }, variant) });
+	}
 
-    template <typename... Ts>
-    constexpr auto variants(const std::optional < std::variant<Ts...>>& variant_opt) {
-        if (variant_opt)
-            return variants(*variant_opt);
-        else
-            if constexpr (mono_state_in_list<Ts...>())
-                return variants(std::variant<Ts...>{ std::monostate{} });
-			else
-				return CreateViewer(std::variant<std::monostate, Ts...>{ std::monostate{} });
-    }
-
+	template <typename... Ts>
+	constexpr auto variants(const std::optional < std::variant<Ts...>>& variant_opt) {
+	 	if (variant_opt)
+		    return variants(*variant_opt);
+	        else
+	            if constexpr (mono_state_in_list<Ts...>())
+	                return variants(std::variant<Ts...>{ std::monostate{} });
+		    else
+			return CreateViewer(std::variant<std::monostate, Ts...>{ std::monostate{} });
+	}
 }
 
 #endif
