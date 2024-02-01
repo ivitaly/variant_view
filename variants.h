@@ -118,14 +118,10 @@ namespace custom_view {
         template <typename Callable>
 	constexpr auto& proxy_request_pipe(Callable&& c) const {
 
-    		std::visit([&](auto&& val) {
-    			using T = decltype(val);
-                	if constexpr (std::is_invocable_v<Callable&, T>)
-                    		std::invoke(std::forward<Callable>(c), val);
-              //  else
-                 //   if constexpr (!IsContainedIn<T, std::variant<Ts...>>::value)
-    			//		static_assert(always_false<T>::value, "type not listed in variant");
-    		}, variant_holder);
+    		std::visit(overloaded{ 
+               		[](auto const&) {},
+               		std::forward<Callable>(c)
+            	}, variant_holder);
 
 	 	return variant_holder;
 	}
